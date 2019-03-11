@@ -30,17 +30,36 @@ With noFailure(studentid,degreeid) AS(
 	SELECT studentid,GPA
 	FROM studentsGpa 
 	WHERE GPA BETWEEN 9 AND 10;
-Create MATERIALIZED VIEW totalECTS(studentid,degreeid,totalECTS) AS
+CREATE Materialized VIEW totalECTS(studentid,degreeid,totalECTS) AS
 	SELECT studentregistrationstodegrees.studentid,studentregistrationstodegrees.degreeid,SUM(courses.ects) AS totalECTS
 	FROM studentregistrationstodegrees, courseregistrations,courses,courseoffers
 	WHERE studentregistrationstodegrees.studentregistrationid=courseregistrations.studentregistrationid AND
 		courses.courseid=courseoffers.courseid AND courseoffers.courseofferid=courseregistrations.courseofferid 
-	AND courseregistrations.grade>=5 AND courseregistrations.grade IS NOT NULL 
+	AND courseregistrations.grade>=5
 	GROUP BY studentregistrationstodegrees.studentid,studentregistrationstodegrees.degreeid;
-CREATE MATERIALIZED VIEW activeStudents(studentid,degreeid) AS 
-	SELECT totalECTS.studentid,totalECTS.degreeid
-	FROM totalECTS, degrees
-	WHERE totalECTS.degreeid=degrees.degreeid AND totalECTS.totalECTS < degrees.totalects;
+CREATE Materialized VIEW activeStudents(studentid,degreeid) AS 
+WITH noneCourseTaken(studentid,degreeid,counts) AS(
+	SELECT  studentregistrationstodegrees.studentid, studentregistrationstodegrees.degreeid,count(*)
+	FROM studentregistrationstodegrees, courseregistrations
+	WHERE studentregistrationstodegrees.studentregistrationid=courseregistrations.studentregistrationid 
+	AND courseregistrations.grade is NULL
+	GROUP BY studentregistrationstodegrees.studentid,studentregistrationstodegrees.degreeid),
+courseTakenSelect(studentid,degreeid,counts) As (
+	SELECT studentregistrationstodegrees.studentid, studentregistrationstodegrees.degreeid,count(*) AS Counts
+	FROM studentregistrationstodegrees, courseregistrations
+	WHERE studentregistrationstodegrees.studentregistrationid=courseregistrations.studentregistrationid 
+	GROUP BY studentregistrationstodegrees.studentregistrationid),
+noneCourseTakenStudents(studentid,degreeid) AS(
+	SELECT courseTakenSelect.studentid,courseTakenSelect.degreeid
+	FROM courseTakenSelect,noneCourseTaken
+	WHERE noneCourseTaken.studentid=courseTakenSelect.studentid AND noneCourseTaken.degreeid=courseTakenSelect.degreeid
+	AND noneCourseTaken.counts=courseTakenSelect.counts)
+SELECT noneCourseTakenStudents.studentid,noneCourseTakenStudents.degreeid
+FROM noneCourseTakenStudents
+UNION
+SELECT totalECTS.studentid,totalECTS.degreeid
+FROM totalECTS, degrees
+WHERE totalECTS.degreeid=degrees.degreeid AND totalECTS.totalECTS < degrees.totalects;
 CREATE MATERIALIZED VIEW ExcellentCourseStudents(StudentId, NumberOfCoursesWhereExcellent) AS
     WITH
         HighestGradeCourseOffers AS (
