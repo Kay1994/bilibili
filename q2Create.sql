@@ -1,13 +1,4 @@
-CREATE MATERIALIZED VIEW gpas(studentid,degreeid,GPA) AS
-    WITH maxGrades(studentid,degreeid,courseid,totalGrade , totalects) AS (
-        SELECT activeStudents.studentid, srtd.degreeid, co.courseid, SUM(cr.grade), SUM(c.ects) 
-        FROM activeStudents, courseRegistrations as cr, courseOffers as co, studentregistrationstodegrees as srtd, courses as c
-        WHERE cr.grade > 5 AND cr.courseOfferId=co.courseOfferId AND srtd.studentregistrationid=cr.studentregistrationid
-        AND srtd.studentid=activeStudents.studentid
-        GROUP BY studentid,degreeid)
-    SELECT tg.studentid, tg.degreeid, CAST (tg.totalGrade AS FLOAT)/CAST(tg.totalects AS FLOAT) AS gpa 
-    FROM maxGrades AS tg
-    GROUP BY studentid, degreeid, tg.totalGrade, tg.totalects;
+
 CREATE MATERIALIZED VIEW excellentStudents(studentid,gpa) AS
 With noFailure(studentid,degreeid) AS(
 			SELECT studentregistrationstodegrees.studentid,studentregistrationstodegrees.degreeid
