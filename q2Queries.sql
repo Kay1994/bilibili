@@ -4,5 +4,5 @@ WITH ActiveStudents(StudentRegistrationId) AS (SELECT StudentRegistrationsToDegr
 SELECT 0;
 SELECT 0;
 SELECT 0;
-SELECT 0;
+SELECT Degrees.DegreeId, Students.BirthYearStudent, Students.Gender, AVG(Info.GPA) FROM StudentRegistrationsToDegrees, Students, Degrees, Info WHERE StudentRegistrationsToDegrees.StudentId = Students.StudentId AND Degrees.DegreeId = StudentRegistrationsToDegrees.DegreeId AND Info.StudentRegistrationId = StudentRegistrationsToDegrees.StudentRegistrationId AND Info.totalects < Degrees.TotalECTS GROUP BY CUBE(Degrees.DegreeId, Students.BirthYearStudent, Students.Gender) ORDER BY Degrees.DegreeId, Students.BirthYearStudent, Students.Gender;
 SELECT 0;
